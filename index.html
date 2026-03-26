@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>医药资讯与 AACR 管线优先级系统</title>
+  <meta name="description" content="医药资讯与 AACR 管线优先级系统">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./medical_mock_data.js"></script>
+  <script src="./aacr_embedded_data.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>医药资讯与 AACR 管线优先级系统</h1>
+        <p>同一页面承载两套独立优先级体系，共享展示壳子，不共享数据源、字段映射或筛选逻辑。</p>
+      </div>
+      <div class="module-tabs" id="moduleTabs"></div>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-icon">筛</div>
+        <div>
+          <div class="sidebar-title">筛选条件</div>
+          <div class="sidebar-subtitle" id="sidebarSubtitle">当前模块配置</div>
+        </div>
+      </div>
+      <div id="sidebarContent"></div>
+      <div class="sidebar-actions">
+        <button class="action-btn" onclick="resetFilters()">重置当前筛选</button>
+        <button class="ghost-btn" onclick="triggerImport()">导入文件</button>
+      </div>
+      <input class="file-input" id="medicalFileInput" type="file" accept=".xlsx,.xls,.csv" onchange="handleModuleImport(event, 'medical')">
+      <input class="file-input" id="aacrFileInput" type="file" accept=".xlsx,.xls,.csv" onchange="handleModuleImport(event, 'aacr')">
+    </aside>
+
+    <main class="main">
+      <section class="hero-grid" id="heroSection">
+        <div class="panel-card">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker" id="panelKicker">System</div>
+              <h2 class="page-title" id="pageTitle">加载中</h2>
+              <p class="page-desc" id="pageDesc"></p>
+            </div>
+          </div>
+        </div>
+        <div class="source-card">
+          <div>
+            <div class="source-label">当前数据源</div>
+            <div class="source-name" id="sourceName"></div>
+            <div class="source-meta" id="sourceMeta"></div>
+          </div>
+          <button class="ghost-btn" onclick="triggerImport()">替换当前模块数据</button>
+        </div>
+      </section>
+
+      <section class="stats-bar" id="statsBar"></section>
+
+      <section class="table-card">
+        <div class="table-header">
+          <div>
+            <div class="table-title" id="tableTitle">优先级总览</div>
+            <div class="table-subtitle" id="tableSubtitle"></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <a class="export-btn" href="https://ai.pharmcube.com/project/%E6%9C%BA%E4%BC%9A%E6%A0%87%E7%AD%BE/%E6%9C%BA%E4%BC%9A%E6%8F%90%E7%A4%BA%E6%A0%87%E7%AD%BE" target="_blank" rel="noreferrer">去更新</a>
+            <button class="export-btn" onclick="exportCurrentRows()">
+              <span>导出当前结果</span>
+            </button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination-bar">
+          <div class="page-info" id="pageInfo"></div>
+          <div class="page-btns" id="pageBtns"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="modalTitle"></h3>
+          <div class="modal-subtitle" id="modalSubtitle"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-panel" id="modalLeft"></div>
+        <div class="modal-panel" id="modalRight"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
