@@ -406,7 +406,7 @@ function renderHero() {
   document.getElementById("tableTitle").textContent = `${module.title}总览`;
   document.getElementById("tableSubtitle").textContent = module.id === "medical"
     ? "医药资讯模块与 AACR 模块完全分离，当前只展示医药资讯模块的数据。"
-    : "AACR 管线模块独立于医药资讯模块，适合后续继续按本地 Excel 反复替换。";
+    : "";
 }
 
 function renderStats() {
