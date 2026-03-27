@@ -238,15 +238,11 @@ function buildSidebar() {
       </div>
     `);
   } else {
-    const orgOptions = getDistinctValues(getActiveRows().map(row => row.source_org_type)).slice(0, 20);
     const modalityOptions = getDistinctValues(getActiveRows().map(row => row.MOA_meta)).slice(0, 50);
     content.push(`
       <div class="filter-group">
-        <div class="filter-group-title">机构类型</div>
-        <select class="select-input" id="orgTypeSelect" onchange="applyFilters()">
-          <option value="">全部机构类型</option>
-          ${orgOptions.map(v => `<option value="${escapeHtml(v)}" ${filters.orgType === v ? "selected" : ""}>${escapeHtml(v)}</option>`).join("")}
-        </select>
+        <div class="filter-group-title">Company Type</div>
+        <input class="search-input" id="aacrCompanyType" type="text" value="${escapeHtml(filters.companyType || "")}" placeholder="e.g. company / university / hospital" oninput="applyFilters()">
       </div>
     `);
     content.push(`
@@ -267,10 +263,6 @@ function buildSidebar() {
   }
 
   document.getElementById("sidebarContent").innerHTML = content.join("");
-  if (module.id === "aacr") {
-    document.getElementById("orgTypeSelect")?.closest(".filter-group")?.remove();
-    document.getElementById("modalitySelect")?.closest(".filter-group")?.remove();
-  }
 }
 
 function priorityCheckbox(key, label, checked) {
@@ -294,6 +286,7 @@ function getDefaultFilters(moduleId) {
     scoreMin: 0,
     scoreMax: 100,
     keyword: "",
+    companyType: "",
     company: "",
     targetMeta: "",
     moaMeta: ""
@@ -336,6 +329,7 @@ function readFiltersFromDom() {
   return {
     ...base,
     keyword: (document.getElementById("aacrKeyword")?.value || "").trim().toLowerCase(),
+    companyType: document.getElementById("aacrCompanyType")?.value || "",
     company: document.getElementById("headCompanyFilter")?.value || "",
     targetMeta: document.getElementById("headTargetFilter")?.value || "",
     moaMeta: document.getElementById("headMoaFilter")?.value || "",
@@ -382,6 +376,7 @@ function getFilteredRows() {
       return true;
     }
 
+    if (filters.companyType && !String(row.source_org_type || "").toLowerCase().includes(filters.companyType.toLowerCase())) return false;
     if (filters.company && !String(row.company || "").toLowerCase().includes(filters.company.toLowerCase())) return false;
     if (filters.targetMeta && !String(row.target_meta || "").toLowerCase().includes(filters.targetMeta.toLowerCase())) return false;
     if (filters.moaMeta && !String(row.MOA_meta || "").toLowerCase().includes(filters.moaMeta.toLowerCase())) return false;
