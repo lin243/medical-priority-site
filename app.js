@@ -97,6 +97,10 @@ function parseDimensions(rawJson) {
   }
 }
 
+function parseUpdateTags(label) {
+  return String(label || "").split(";").map(item => item.trim()).filter(Boolean);
+}
+
 function normalizeMedicalRows(rows) {
   return rows.map((row, index) => ({
     ...row,
@@ -111,6 +115,7 @@ function normalizeMedicalRows(rows) {
     companyDisplay: String(row.baseline_company || "").trim(),
     totalScore: num(row.llm_total_score),
     updateContent: String(row.label || "").trim(),
+    updateTags: parseUpdateTags(row.label),
     newsTitle: String(row.title_news || "").trim(),
     newsUrl: String(row.url_news || "").trim(),
     sourceNews: String(row.source_news || "").trim(),
@@ -213,8 +218,32 @@ function downloadTextFile(name, text, mime) {
 
 function getDefaultFilters(moduleId) {
   return moduleId === "medical"
-    ? { priority: { high: true, mid: true, low: true }, scoreMin: 0, scoreMax: 100, dateFrom: "", dateTo: "", status: { pending: true, done: true }, keyword: "" }
-    : { priority: { high: true, mid: true, low: true }, scoreMin: 0, scoreMax: 100, keyword: "" };
+    ? {
+        priority: { high: true, mid: true, low: true },
+        scoreMin: 0,
+        scoreMax: 100,
+        dateFrom: "",
+        dateTo: "",
+        status: { pending: true, done: true },
+        keyword: "",
+        updateTypes: {
+          drug: true,
+          drug_synonym: true,
+          mismatch: true,
+          target: true,
+          moa: true
+        }
+      }
+    : {
+        priority: { high: true, mid: true, low: true },
+        scoreMin: 0,
+        scoreMax: 100,
+        keyword: "",
+        pipeline: "",
+        company: "",
+        targetMeta: "",
+        moaMeta: ""
+      };
 }
 
 function activeModule() {
@@ -232,7 +261,15 @@ function readFiltersFromDom() {
     scoreMax: num(document.getElementById("scoreMax")?.value || 100),
     keyword: (document.getElementById("keywordInput")?.value || "").trim().toLowerCase()
   };
-  if (state.activeModule !== "medical") return base;
+  if (state.activeModule !== "medical") {
+    return {
+      ...base,
+      pipeline: (document.getElementById("headPipelineFilter")?.value || "").trim().toLowerCase(),
+      company: (document.getElementById("headCompanyFilter")?.value || "").trim().toLowerCase(),
+      targetMeta: (document.getElementById("headTargetFilter")?.value || "").trim().toLowerCase(),
+      moaMeta: (document.getElementById("headMoaFilter")?.value || "").trim().toLowerCase()
+    };
+  }
   return {
     ...base,
     dateFrom: document.getElementById("dateFrom")?.value || "",
@@ -240,7 +277,14 @@ function readFiltersFromDom() {
     status: {
       pending: document.getElementById("statusPending")?.checked ?? true,
       done: document.getElementById("statusDone")?.checked ?? true
-    }
+    },
+    updateTypes: {
+      drug: document.getElementById("updateTypeDrug")?.checked ?? true,
+      drug_synonym: document.getElementById("updateTypeDrugSynonym")?.checked ?? true,
+      mismatch: document.getElementById("updateTypeMismatch")?.checked ?? true,
+      target: document.getElementById("updateTypeTarget")?.checked ?? true,
+      moa: document.getElementById("updateTypeMoa")?.checked ?? true
+    },
   };
 }
 
@@ -256,12 +300,26 @@ function filteredRows() {
       if (filters.dateTo && row.dateOnly > filters.dateTo) return false;
       if (!filters.status.pending && row.updateStatusText === "未更新") return false;
       if (!filters.status.done && row.updateStatusText === "已更新") return false;
+      const selectedMatchers = [];
+      if (filters.updateTypes.drug) selectedMatchers.push(tag => tag === "【药品】");
+      if (filters.updateTypes.drug_synonym) selectedMatchers.push(tag => tag === "【新增药品异名】");
+      if (filters.updateTypes.mismatch) selectedMatchers.push(tag => tag === "【药品和药品异名不一致】");
+      if (filters.updateTypes.target) selectedMatchers.push(tag => tag.startsWith("【更新或新增靶点:"));
+      if (filters.updateTypes.moa) selectedMatchers.push(tag => tag === "【药理类型】");
+      if (!selectedMatchers.length) return false;
+      if (!row.updateTags.some(tag => selectedMatchers.some(match => match(tag)))) return false;
     }
     if (filters.keyword) {
       const haystack = module.id === "medical"
         ? [row.drugDisplay, row.companyDisplay, row.updateContent, row.newsTitle, row.idNews].join(" ").toLowerCase()
         : [row.drug_name, row.company, row.target, row.title, row.id].join(" ").toLowerCase();
       if (!haystack.includes(filters.keyword)) return false;
+    }
+    if (module.id !== "medical") {
+      if (filters.pipeline && !String(row.drug_name || "").toLowerCase().includes(filters.pipeline)) return false;
+      if (filters.company && !String(row.company || "").toLowerCase().includes(filters.company)) return false;
+      if (filters.targetMeta && !String(row.target_meta || "").toLowerCase().includes(filters.targetMeta)) return false;
+      if (filters.moaMeta && !String(row.MOA_meta || "").toLowerCase().includes(filters.moaMeta)) return false;
     }
     return true;
   });
@@ -308,6 +366,16 @@ function buildSidebar() {
           <label class="cb-item"><input type="checkbox" id="statusDone" ${f.status.done ? "checked" : ""} onchange="applyFilters()"><span class="dot dot-updated"></span>已更新</label>
         </div>
       </div>
+      <div class="filter-group">
+        <div class="filter-group-title">更新内容</div>
+        <div class="checkbox-list">
+          <label class="cb-item"><input type="checkbox" id="updateTypeDrug" ${f.updateTypes.drug ? "checked" : ""} onchange="applyFilters()">新增药品</label>
+          <label class="cb-item"><input type="checkbox" id="updateTypeDrugSynonym" ${f.updateTypes.drug_synonym ? "checked" : ""} onchange="applyFilters()">新增药品异名</label>
+          <label class="cb-item"><input type="checkbox" id="updateTypeMismatch" ${f.updateTypes.mismatch ? "checked" : ""} onchange="applyFilters()">药品和药品异名不一致</label>
+          <label class="cb-item"><input type="checkbox" id="updateTypeTarget" ${f.updateTypes.target ? "checked" : ""} onchange="applyFilters()">更新靶点</label>
+          <label class="cb-item"><input type="checkbox" id="updateTypeMoa" ${f.updateTypes.moa ? "checked" : ""} onchange="applyFilters()">更新药理类型</label>
+        </div>
+      </div>
     ` : ""}
     <div class="filter-group">
       <div class="filter-group-title">关键词</div>
@@ -323,7 +391,7 @@ function cb(key, label, checked) {
 
 function renderHero() {
   const module = activeModule();
-  document.getElementById("heroSection").style.display = module.id === "aacr" ? "none" : "grid";
+  document.getElementById("heroSection").style.display = "none";
   document.getElementById("panelKicker").textContent = module.kicker;
   document.getElementById("pageTitle").textContent = module.title;
   document.getElementById("pageDesc").textContent = module.description;
@@ -378,7 +446,9 @@ function renderTableSection() {
         ["ID", row => `<div class="id-cell"><button class="copy-id-btn" onclick="copyText('${escJs(row.id || "")}', event)">${esc(row.id || "-")}</button></div>`]
       ];
 
-  document.getElementById("tableHead").innerHTML = `<tr>${columns.map(([label]) => `<th>${label}</th>`).join("")}</tr>`;
+  document.getElementById("tableHead").innerHTML = module.id === "medical"
+    ? `<tr>${columns.map(([label]) => `<th>${label}</th>`).join("")}</tr>`
+    : renderAacrTableHead();
   const start = (state.page - 1) * state.perPage;
   const pageRows = rows.slice(start, start + state.perPage);
   document.getElementById("tableBody").innerHTML = pageRows.length
@@ -387,9 +457,37 @@ function renderTableSection() {
   renderPagination(rows.length);
 }
 
+function renderAacrTableHead() {
+  const filters = state.filters.aacr || getDefaultFilters("aacr");
+  const searchBox = (id, placeholder, value) => `
+    <div style="margin-top:6px;">
+      <input
+        class="search-input"
+        id="${id}"
+        type="search"
+        value="${esc(value || "")}"
+        placeholder="${placeholder}"
+        style="padding:6px 8px;font-size:12px;min-width:110px;max-width:160px;"
+        oninput="applyFilters()">
+    </div>
+  `;
+
+  return `
+    <tr>
+      <th>管线${searchBox("headPipelineFilter", "搜索管线", filters.pipeline)}</th>
+      <th>公司${searchBox("headCompanyFilter", "搜索公司", filters.company)}</th>
+      <th>靶点${searchBox("headTargetFilter", "搜索靶点", filters.targetMeta)}</th>
+      <th>作用机制${searchBox("headMoaFilter", "搜索机制", filters.moaMeta)}</th>
+      <th>总分</th>
+      <th>简述</th>
+      <th>ID</th>
+    </tr>
+  `;
+}
+
 function statusCell(row) {
   const done = row.updateStatusText === "已更新";
-  return `<span class="status-pill ${done ? "status-done" : "status-pending"}"><span class="dot ${done ? "dot-updated" : "dot-pending"}"></span>${esc(row.updateStatusText)}</span>`;
+  return `<button class="ghost-btn" onclick="toggleMedicalStatus('${escJs(row.__id)}', event)" style="padding:6px 10px;border-color:${done ? '#16a34a' : '#94a3b8'};color:${done ? '#166534' : '#475569'};background:${done ? '#dcfce7' : '#f1f5f9'};">${esc(row.updateStatusText)}</button>`;
 }
 
 function renderPagination(total) {
@@ -489,6 +587,16 @@ function copyText(value, event) {
   } else {
     fallbackCopy(text);
   }
+}
+
+function toggleMedicalStatus(rowId, event) {
+  event?.stopPropagation();
+  if (state.activeModule !== "medical") return;
+  const row = MODULES.medical.rows.find(item => item.__id === rowId);
+  if (!row) return;
+  row.updateStatusText = row.updateStatusText === "已更新" ? "未更新" : "已更新";
+  renderStats();
+  renderTableSection();
 }
 
 function fallbackCopy(text) {
