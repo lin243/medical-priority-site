@@ -390,6 +390,17 @@ tbody tr:hover td { background: rgba(248, 250, 252, 0.72); }
 .summary-cell,
 .title-link { max-width: 340px; line-height: 1.6; font-size: 13px; color: var(--text); }
 
+.table-medical th:nth-child(1),
+.table-medical td:nth-child(1) { width: 15%; min-width: 170px; }
+.table-medical th:nth-child(7),
+.table-medical td:nth-child(7) { width: 120px; min-width: 120px; white-space: nowrap; }
+
+.table-aacr th:nth-child(1),
+.table-aacr td:nth-child(1) { width: 17%; min-width: 160px; }
+
+.table-aacr th:nth-child(2),
+.table-aacr td:nth-child(2) { width: 16%; min-width: 170px; }
+
 .summary-cell {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -490,7 +501,7 @@ tbody tr:hover td { background: rgba(248, 250, 252, 0.72); }
 .section { margin-bottom: 20px; }
 .section-title { margin-bottom: 10px; color: var(--muted-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
 .info-grid { display: grid; gap: 8px; }
-.info-row { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 10px; font-size: 13px; line-height: 1.55; }
+.info-row { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; font-size: 13px; line-height: 1.55; }
 .info-key { color: var(--muted); }
 .info-val { color: var(--text); word-break: break-word; }
 
@@ -507,6 +518,10 @@ tbody tr:hover td { background: rgba(248, 250, 252, 0.72); }
 }
 
 .abstract-box { white-space: pre-wrap; }
+.modal-abstract-box {
+  max-height: 240px;
+  overflow: auto;
+}
 .score-block { display: flex; align-items: end; gap: 14px; margin-bottom: 18px; }
 .score-num { font-family: Consolas, "SFMono-Regular", "Liberation Mono", monospace; font-size: 40px; line-height: 1; font-weight: 700; }
 .score-caption { color: var(--muted); font-size: 12px; }
@@ -517,7 +532,13 @@ tbody tr:hover td { background: rgba(248, 250, 252, 0.72); }
 .metric-tag { border-radius: 999px; padding: 2px 8px; background: rgba(255, 255, 255, 0.84); border: 1px solid var(--line); color: var(--muted); font-size: 10px; font-weight: 700; }
 .metric-score { font-family: Consolas, "SFMono-Regular", "Liberation Mono", monospace; font-size: 14px; font-weight: 700; }
 .metric-track { height: 8px; border-radius: 999px; overflow: hidden; background: rgba(226, 232, 240, 0.9); margin-bottom: 8px; }
-.metric-fill { height: 100%; width: 0; border-radius: inherit; transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1); }
+.metric-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .metric-reason { color: var(--muted); font-size: 12px; line-height: 1.7; }
 .file-input { display: none; }
 
