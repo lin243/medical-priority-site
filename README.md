@@ -28,3 +28,16 @@
 cd C:\Users\YYMF\Desktop\medical-priority-site
 python -m http.server 8000
 ```
+
+## NPNews 脚本默认运行方式
+
+涉及 ES 和大模型调用时，默认使用同目录下的 PowerShell 入口，而不是直接运行 `.py`：
+
+```powershell
+cd C:\Users\YYMF\Desktop\medical-priority-site
+.\export_npnews_daily_table.ps1
+.\score_npnews_daily_table.ps1 --input .\npnews_daily_table_2026-03-26.csv
+.\run_npnews_pipeline.ps1 --date 2026-03-26
+```
+
+这些入口会自动使用 `uv run --project E:\llm-master` 启动，避免系统 Python 缺依赖。

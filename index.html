@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>医药资讯与 AACR 管线优先级系统</title>
+  <title>医药资讯与 AACR 优先级系统</title>
   <meta name="description" content="医药资讯与 AACR 管线优先级系统">
   <link rel="stylesheet" href="./styles.css">
-  <script src="./medical_mock_data.js"></script>
   <script src="./aacr_embedded_data.js"></script>
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
-        <h1>医药资讯与 AACR 管线优先级系统</h1>
+        <h1>医药资讯与 AACR 优先级系统</h1>
       </div>
       <div class="module-tabs" id="moduleTabs"></div>
     </div>
@@ -33,8 +32,8 @@
         <button class="action-btn" onclick="resetFilters()">重置当前筛选</button>
         <button class="ghost-btn" onclick="triggerImport()">导入文件</button>
       </div>
-      <input class="file-input" id="medicalFileInput" type="file" accept=".xlsx,.xls,.csv" onchange="handleModuleImport(event, 'medical')">
-      <input class="file-input" id="aacrFileInput" type="file" accept=".xlsx,.xls,.csv" onchange="handleModuleImport(event, 'aacr')">
+      <input class="file-input" id="medicalFileInput" type="file" accept=".csv" onchange="handleModuleImport(event, 'medical')">
+      <input class="file-input" id="aacrFileInput" type="file" accept=".csv" onchange="handleModuleImport(event, 'aacr')">
     </aside>
 
     <main class="main">
