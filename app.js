@@ -226,13 +226,7 @@ function getDefaultFilters(moduleId) {
         dateTo: "",
         status: { pending: true, done: true },
         keyword: "",
-        updateTypes: {
-          drug: true,
-          drug_synonym: true,
-          mismatch: true,
-          target: true,
-          moa: true
-        }
+        updateType: ""
       }
     : {
         priority: { high: true, mid: true, low: true },
@@ -278,13 +272,7 @@ function readFiltersFromDom() {
       pending: document.getElementById("statusPending")?.checked ?? true,
       done: document.getElementById("statusDone")?.checked ?? true
     },
-    updateTypes: {
-      drug: document.getElementById("updateTypeDrug")?.checked ?? true,
-      drug_synonym: document.getElementById("updateTypeDrugSynonym")?.checked ?? true,
-      mismatch: document.getElementById("updateTypeMismatch")?.checked ?? true,
-      target: document.getElementById("updateTypeTarget")?.checked ?? true,
-      moa: document.getElementById("updateTypeMoa")?.checked ?? true
-    },
+    updateType: document.getElementById("headUpdateTypeFilter")?.value || "",
   };
 }
 
@@ -300,14 +288,17 @@ function filteredRows() {
       if (filters.dateTo && row.dateOnly > filters.dateTo) return false;
       if (!filters.status.pending && row.updateStatusText === "未更新") return false;
       if (!filters.status.done && row.updateStatusText === "已更新") return false;
-      const selectedMatchers = [];
-      if (filters.updateTypes.drug) selectedMatchers.push(tag => tag === "【药品】");
-      if (filters.updateTypes.drug_synonym) selectedMatchers.push(tag => tag === "【新增药品异名】");
-      if (filters.updateTypes.mismatch) selectedMatchers.push(tag => tag === "【药品和药品异名不一致】");
-      if (filters.updateTypes.target) selectedMatchers.push(tag => tag.startsWith("【更新或新增靶点:"));
-      if (filters.updateTypes.moa) selectedMatchers.push(tag => tag === "【药理类型】");
-      if (!selectedMatchers.length) return false;
-      if (!row.updateTags.some(tag => selectedMatchers.some(match => match(tag)))) return false;
+      if (filters.updateType) {
+        const matcherByType = {
+          drug: tag => tag === "【药品】",
+          drug_synonym: tag => tag === "【新增药品异名】",
+          mismatch: tag => tag === "【药品和药品异名不一致】",
+          target: tag => tag.startsWith("【更新或新增靶点:"),
+          moa: tag => tag === "【药理类型】"
+        };
+        const matcher = matcherByType[filters.updateType];
+        if (matcher && !row.updateTags.some(tag => matcher(tag))) return false;
+      }
     }
     if (filters.keyword) {
       const haystack = module.id === "medical"
@@ -364,16 +355,6 @@ function buildSidebar() {
         <div class="checkbox-list">
           <label class="cb-item"><input type="checkbox" id="statusPending" ${f.status.pending ? "checked" : ""} onchange="applyFilters()"><span class="dot dot-pending"></span>未更新</label>
           <label class="cb-item"><input type="checkbox" id="statusDone" ${f.status.done ? "checked" : ""} onchange="applyFilters()"><span class="dot dot-updated"></span>已更新</label>
-        </div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-group-title">更新内容</div>
-        <div class="checkbox-list">
-          <label class="cb-item"><input type="checkbox" id="updateTypeDrug" ${f.updateTypes.drug ? "checked" : ""} onchange="applyFilters()">新增药品</label>
-          <label class="cb-item"><input type="checkbox" id="updateTypeDrugSynonym" ${f.updateTypes.drug_synonym ? "checked" : ""} onchange="applyFilters()">新增药品异名</label>
-          <label class="cb-item"><input type="checkbox" id="updateTypeMismatch" ${f.updateTypes.mismatch ? "checked" : ""} onchange="applyFilters()">药品和药品异名不一致</label>
-          <label class="cb-item"><input type="checkbox" id="updateTypeTarget" ${f.updateTypes.target ? "checked" : ""} onchange="applyFilters()">更新靶点</label>
-          <label class="cb-item"><input type="checkbox" id="updateTypeMoa" ${f.updateTypes.moa ? "checked" : ""} onchange="applyFilters()">更新药理类型</label>
         </div>
       </div>
     ` : ""}
@@ -447,7 +428,7 @@ function renderTableSection() {
       ];
 
   document.getElementById("tableHead").innerHTML = module.id === "medical"
-    ? `<tr>${columns.map(([label]) => `<th>${label}</th>`).join("")}</tr>`
+    ? renderMedicalTableHead(columns)
     : renderAacrTableHead();
   const start = (state.page - 1) * state.perPage;
   const pageRows = rows.slice(start, start + state.perPage);
@@ -455,6 +436,29 @@ function renderTableSection() {
     ? pageRows.map(row => `<tr>${columns.map(([, render]) => `<td>${render(row)}</td>`).join("")}</tr>`).join("")
     : `<tr><td colspan="${columns.length}"><div class="empty-state">当前筛选条件下没有匹配数据。</div></td></tr>`;
   renderPagination(rows.length);
+}
+
+function renderMedicalTableHead(columns) {
+  const filters = state.filters.medical || getDefaultFilters("medical");
+  return `<tr>${columns.map(([label]) => {
+    if (label !== "更新内容") return `<th>${label}</th>`;
+    return `<th>${label}
+      <div style="margin-top:6px;">
+        <select
+          id="headUpdateTypeFilter"
+          class="select-input"
+          style="padding:6px 8px;font-size:12px;min-width:150px;"
+          onchange="applyFilters()">
+          <option value="" ${filters.updateType === "" ? "selected" : ""}>全部</option>
+          <option value="drug" ${filters.updateType === "drug" ? "selected" : ""}>新增药品</option>
+          <option value="drug_synonym" ${filters.updateType === "drug_synonym" ? "selected" : ""}>新增药品异名</option>
+          <option value="mismatch" ${filters.updateType === "mismatch" ? "selected" : ""}>药品和药品异名不一致</option>
+          <option value="target" ${filters.updateType === "target" ? "selected" : ""}>更新靶点</option>
+          <option value="moa" ${filters.updateType === "moa" ? "selected" : ""}>更新药理类型</option>
+        </select>
+      </div>
+    </th>`;
+  }).join("")}</tr>`;
 }
 
 function renderAacrTableHead() {
