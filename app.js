@@ -1,26 +1,26 @@
-const TODAY = new Date().toISOString().slice(0, 10);
+﻿const TODAY = new Date().toISOString().slice(0, 10);
 const DEFAULT_MEDICAL_CSV = "./npnews_daily_table_latest_scored.csv";
 
 const MODULES = {
   medical: {
     id: "medical",
-    tabLabel: "医药资讯优先级系统",
-    title: "医药资讯优先级系统",
+    tabLabel: "鍖昏嵂璧勮浼樺厛绾х郴缁?,
+    title: "鍖昏嵂璧勮浼樺厛绾х郴缁?,
     kicker: "Medical News",
-    description: "默认读取同目录的 scored CSV，后续导入文件也按同一格式解析。",
-    sourceName: "本地 CSV / 医药资讯",
-    sourceMeta: "当前默认读取 scored CSV。",
+    description: "榛樿璇诲彇鍚岀洰褰曠殑 scored CSV锛屽悗缁鍏ユ枃浠朵篃鎸夊悓涓€鏍煎紡瑙ｆ瀽銆?,
+    sourceName: "鏈湴 CSV / 鍖昏嵂璧勮",
+    sourceMeta: "褰撳墠榛樿璇诲彇 scored CSV銆?,
     datasetName: "medical_news_priority",
     rows: []
   },
   aacr: {
     id: "aacr",
-    tabLabel: "AACR 管线优先级系统",
-    title: "AACR 管线优先级系统",
+    tabLabel: "AACR 绠＄嚎浼樺厛绾х郴缁?,
+    title: "AACR 绠＄嚎浼樺厛绾х郴缁?,
     kicker: "AACR Pipeline",
-    description: "AACR 模块保持独立，继续使用当前内嵌数据。",
-    sourceName: "本地嵌入数据 / AACR",
-    sourceMeta: "当前默认读取页面内嵌 AACR 数据。",
+    description: "",
+    sourceName: "鏈湴宓屽叆鏁版嵁 / AACR",
+    sourceMeta: "褰撳墠榛樿璇诲彇椤甸潰鍐呭祵 AACR 鏁版嵁銆?,
     datasetName: "aacr_pipeline_priority",
     rows: []
   }
@@ -86,11 +86,11 @@ function parseDimensions(rawJson) {
   if (!rawJson) return [];
   try {
     const parsed = JSON.parse(rawJson);
-    const details = Array.isArray(parsed["维度打分详情"]) ? parsed["维度打分详情"] : [];
+    const details = Array.isArray(parsed["缁村害鎵撳垎璇︽儏"]) ? parsed["缁村害鎵撳垎璇︽儏"] : [];
     return details.map(item => ({
-      name: item["维度"] || "",
-      score: item["分数"] || "",
-      reason: item["理由"] || ""
+      name: item["缁村害"] || "",
+      score: item["鍒嗘暟"] || "",
+      reason: item["鐞嗙敱"] || ""
     }));
   } catch {
     return [];
@@ -120,7 +120,7 @@ function normalizeMedicalRows(rows) {
     newsUrl: String(row.url_news || "").trim(),
     sourceNews: String(row.source_news || "").trim(),
     dateOnly: String(row.time || "").trim().slice(0, 10),
-    updateStatusText: String(row.update_status || row.updateStatus || "").trim() || "未更新",
+    updateStatusText: String(row.update_status || row.updateStatus || "").trim() || "鏈洿鏂?,
     baselineName: String(row.baseline_name || "").trim(),
     baselineTarget: String(row.baseline_target || "").trim(),
     baselineMoa: String(row.baseline_MOA || "").trim(),
@@ -291,15 +291,15 @@ function filteredRows() {
     if (module.id === "medical") {
       if (filters.dateFrom && row.dateOnly < filters.dateFrom) return false;
       if (filters.dateTo && row.dateOnly > filters.dateTo) return false;
-      if (!filters.status.pending && row.updateStatusText === "未更新") return false;
-      if (!filters.status.done && row.updateStatusText === "已更新") return false;
+      if (!filters.status.pending && row.updateStatusText === "鏈洿鏂?) return false;
+      if (!filters.status.done && row.updateStatusText === "宸叉洿鏂?) return false;
       if (filters.updateType) {
         const matcherByType = {
-          drug: tag => tag === "【药品】",
-          drug_synonym: tag => tag === "【新增药品异名】",
-          mismatch: tag => tag === "【药品和药品异名不一致】",
-          target: tag => tag.startsWith("【更新或新增靶点:"),
-          moa: tag => tag === "【药理类型】"
+          drug: tag => tag === "銆愯嵂鍝併€?,
+          drug_synonym: tag => tag === "銆愭柊澧炶嵂鍝佸紓鍚嶃€?,
+          mismatch: tag => tag === "銆愯嵂鍝佸拰鑽搧寮傚悕涓嶄竴鑷淬€?,
+          target: tag => tag.startsWith("銆愭洿鏂版垨鏂板闈剁偣:"),
+          moa: tag => tag === "銆愯嵂鐞嗙被鍨嬨€?
         };
         const matcher = matcherByType[filters.updateType];
         if (matcher && !row.updateTags.some(tag => matcher(tag))) return false;
@@ -335,18 +335,18 @@ function buildTabs() {
 function buildSidebar() {
   const module = activeModule();
   const f = state.filters[module.id] || getDefaultFilters(module.id);
-  document.getElementById("sidebarSubtitle").textContent = module.id === "medical" ? "医药资讯模块" : "AACR 模块";
+  document.getElementById("sidebarSubtitle").textContent = module.id === "medical" ? "鍖昏嵂璧勮妯″潡" : "AACR 妯″潡";
   document.getElementById("sidebarContent").innerHTML = `
     <div class="filter-group">
-      <div class="filter-group-title">优先级</div>
+      <div class="filter-group-title">浼樺厛绾?/div>
       <div class="checkbox-list">
-        ${cb("high", "高优先", f.priority.high)}
-        ${cb("mid", "中优先", f.priority.mid)}
-        ${cb("low", "低优先", f.priority.low)}
+        ${cb("high", "楂樹紭鍏?, f.priority.high)}
+        ${cb("mid", "涓紭鍏?, f.priority.mid)}
+        ${cb("low", "浣庝紭鍏?, f.priority.low)}
       </div>
     </div>
     <div class="filter-group">
-      <div class="filter-group-title">总分范围</div>
+      <div class="filter-group-title">鎬诲垎鑼冨洿</div>
       <div class="score-inputs">
         <input class="score-input" id="scoreMin" type="number" min="0" max="100" value="${f.scoreMin}" oninput="applyFilters()">
         <input class="score-input" id="scoreMax" type="number" min="0" max="100" value="${f.scoreMax}" oninput="applyFilters()">
@@ -354,35 +354,35 @@ function buildSidebar() {
     </div>
     ${module.id !== "medical" ? `
       <div class="filter-group">
-        <div class="filter-group-title">公司类型</div>
+        <div class="filter-group-title">鍏徃绫诲瀷</div>
         <input
           class="search-input"
           id="companyTypeInput"
           type="search"
           value="${esc(f.companyType || "")}"
-          placeholder="搜索公司类型"
+          placeholder="鎼滅储鍏徃绫诲瀷"
           onkeydown="handleSubmitSearch(event)">
       </div>
     ` : ""}
     ${module.id === "medical" ? `
       <div class="filter-group">
-        <div class="filter-group-title">日期</div>
+        <div class="filter-group-title">鏃ユ湡</div>
         <div class="date-inputs">
           <input class="date-input" id="dateFrom" type="date" value="${f.dateFrom}" onchange="applyFilters()">
           <input class="date-input" id="dateTo" type="date" value="${f.dateTo}" onchange="applyFilters()">
         </div>
       </div>
       <div class="filter-group">
-        <div class="filter-group-title">更新状态</div>
+        <div class="filter-group-title">鏇存柊鐘舵€?/div>
         <div class="checkbox-list">
-          <label class="cb-item"><input type="checkbox" id="statusPending" ${f.status.pending ? "checked" : ""} onchange="applyFilters()"><span class="dot dot-pending"></span>未更新</label>
-          <label class="cb-item"><input type="checkbox" id="statusDone" ${f.status.done ? "checked" : ""} onchange="applyFilters()"><span class="dot dot-updated"></span>已更新</label>
+          <label class="cb-item"><input type="checkbox" id="statusPending" ${f.status.pending ? "checked" : ""} onchange="applyFilters()"><span class="dot dot-pending"></span>鏈洿鏂?/label>
+          <label class="cb-item"><input type="checkbox" id="statusDone" ${f.status.done ? "checked" : ""} onchange="applyFilters()"><span class="dot dot-updated"></span>宸叉洿鏂?/label>
         </div>
       </div>
     ` : ""}
     <div class="filter-group">
-      <div class="filter-group-title">关键词</div>
-      <input class="search-input" id="keywordInput" type="text" value="${esc(f.keyword || "")}" placeholder="搜索药品、标题、公司、ID" oninput="applyFilters()">
+      <div class="filter-group-title">鍏抽敭璇?/div>
+      <input class="search-input" id="keywordInput" type="text" value="${esc(f.keyword || "")}" placeholder="鎼滅储鑽搧銆佹爣棰樸€佸叕鍙搞€両D" oninput="applyFilters()">
     </div>
   `;
 }
@@ -400,8 +400,8 @@ function renderHero() {
   document.getElementById("pageDesc").textContent = module.description;
   document.getElementById("sourceName").textContent = module.sourceName;
   document.getElementById("sourceMeta").textContent = module.sourceMeta;
-  document.getElementById("tableTitle").textContent = `${module.title}总览`;
-  document.getElementById("tableSubtitle").textContent = module.id === "medical" ? "主表字段直接来自 scored CSV。" : "AACR 模块保持独立。";
+  document.getElementById("tableTitle").textContent = `${module.title}鎬昏`;
+  document.getElementById("tableSubtitle").textContent = "";
 }
 
 function renderStats() {
@@ -409,16 +409,16 @@ function renderStats() {
   const rows = filteredRows();
   const stats = module.id === "medical"
     ? [
-        ["高优先", rows.filter(r => r.totalScore >= 75).length, "high"],
-        ["中优先", rows.filter(r => r.totalScore >= 50 && r.totalScore < 75).length, "mid"],
-        ["今日新增", rows.filter(r => r.dateOnly === TODAY).length, "accent"],
-        ["待更新", rows.filter(r => r.updateStatusText === "未更新").length, "green"]
+        ["楂樹紭鍏?, rows.filter(r => r.totalScore >= 75).length, "high"],
+        ["涓紭鍏?, rows.filter(r => r.totalScore >= 50 && r.totalScore < 75).length, "mid"],
+        ["浠婃棩鏂板", rows.filter(r => r.dateOnly === TODAY).length, "accent"],
+        ["寰呮洿鏂?, rows.filter(r => r.updateStatusText === "鏈洿鏂?).length, "green"]
       ]
     : [
-        ["高优先", rows.filter(r => r.total_score >= 75).length, "high"],
-        ["中优先", rows.filter(r => r.total_score >= 50 && r.total_score < 75).length, "mid"],
-        ["公司来源", rows.filter(r => String(r.source_org_type || "").includes("公司")).length, "accent"],
-        ["大学来源", rows.filter(r => String(r.source_org_type || "").includes("大学")).length, "green"]
+        ["楂樹紭鍏?, rows.filter(r => r.total_score >= 75).length, "high"],
+        ["涓紭鍏?, rows.filter(r => r.total_score >= 50 && r.total_score < 75).length, "mid"],
+        ["鍏徃鏉ユ簮", rows.filter(r => String(r.source_org_type || "").includes("鍏徃")).length, "accent"],
+        ["澶у鏉ユ簮", rows.filter(r => String(r.source_org_type || "").includes("澶у")).length, "green"]
       ];
   document.getElementById("statsBar").innerHTML = stats.map(([label, value, tone]) => `
     <div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value ${tone}">${value}</div></div>
@@ -431,21 +431,21 @@ function renderTableSection() {
   state.filteredRows = rows;
   const columns = module.id === "medical"
     ? [
-        ["药品", row => `${esc(row.drugDisplay || "-")}<div class="subtext">${esc(row.companyDisplay || "")}</div>`],
-        ["总分", row => `<button class="drug-btn" onclick="openModal('${escJs(row.__id)}')">${scorePill(row.totalScore)}</button>`],
-        ["更新内容", row => `<div class="summary-cell">${esc(row.updateContent || "-")}</div>`],
-        ["资讯标题", row => row.newsUrl ? `<a class="title-link" href="${esc(row.newsUrl)}" target="_blank" rel="noopener noreferrer">${esc(row.newsTitle || "-")}</a>` : esc(row.newsTitle || "-")],
-        ["日期", row => `<span class="mono">${esc(row.dateOnly || "-")}</span>`],
+        ["鑽搧", row => `${esc(row.drugDisplay || "-")}<div class="subtext">${esc(row.companyDisplay || "")}</div>`],
+        ["鎬诲垎", row => `<button class="drug-btn" onclick="openModal('${escJs(row.__id)}')">${scorePill(row.totalScore)}</button>`],
+        ["鏇存柊鍐呭", row => `<div class="summary-cell">${esc(row.updateContent || "-")}</div>`],
+        ["璧勮鏍囬", row => row.newsUrl ? `<a class="title-link" href="${esc(row.newsUrl)}" target="_blank" rel="noopener noreferrer">${esc(row.newsTitle || "-")}</a>` : esc(row.newsTitle || "-")],
+        ["鏃ユ湡", row => `<span class="mono">${esc(row.dateOnly || "-")}</span>`],
         ["ID", row => `<div class="id-cell"><button class="copy-id-btn" onclick="copyText('${escJs(row.idNews || "")}', event)">${esc(row.idNews || "-")}</button></div>`],
-        ["更新状态", row => statusCell(row)]
+        ["鏇存柊鐘舵€?, row => statusCell(row)]
       ]
     : [
-        ["管线", row => row.url ? `<a class="title-link" href="${esc(row.url)}" target="_blank" rel="noopener noreferrer">${esc(row.drug_name || "-")}</a>` : esc(row.drug_name || "-")],
-        ["公司", row => `<div class="compact-text">${esc(row.company || "-")}</div><div class="subtext compact-text">${esc(row.source_org_type || "-")}</div>`],
-        ["靶点", row => `<div class="compact-text">${esc(row.target_meta || "-")}</div><div class="subtext compact-text">${esc(row.target || "-")}</div>`],
-        ["作用机制", row => `<div class="compact-text">${esc(row.MOA_meta || "-")}</div><div class="subtext compact-text">${esc(row.modality || "-")}</div>`],
-        ["总分", row => `<button class="drug-btn" onclick="openModal('${escJs(row.__id)}')">${scorePill(row.total_score)}</button>`],
-        ["简述", row => `<div class="summary-cell">${esc(row.brief_reason || "-")}</div>`],
+        ["绠＄嚎", row => row.url ? `<a class="title-link" href="${esc(row.url)}" target="_blank" rel="noopener noreferrer">${esc(row.drug_name || "-")}</a>` : esc(row.drug_name || "-")],
+        ["鍏徃", row => `<div class="compact-text">${esc(row.company || "-")}</div><div class="subtext compact-text">${esc(row.source_org_type || "-")}</div>`],
+        ["闈剁偣", row => `<div class="compact-text">${esc(row.target_meta || "-")}</div><div class="subtext compact-text">${esc(row.target || "-")}</div>`],
+        ["浣滅敤鏈哄埗", row => `<div class="compact-text">${esc(row.MOA_meta || "-")}</div><div class="subtext compact-text">${esc(row.modality || "-")}</div>`],
+        ["鎬诲垎", row => `<button class="drug-btn" onclick="openModal('${escJs(row.__id)}')">${scorePill(row.total_score)}</button>`],
+        ["绠€杩?, row => `<div class="summary-cell">${esc(row.brief_reason || "-")}</div>`],
         ["ID", row => `<div class="id-cell"><button class="copy-id-btn" onclick="copyText('${escJs(row.id || "")}', event)">${esc(row.id || "-")}</button></div>`]
       ];
 
@@ -458,7 +458,7 @@ function renderTableSection() {
   const pageRows = rows.slice(start, start + state.perPage);
   document.getElementById("tableBody").innerHTML = pageRows.length
     ? pageRows.map(row => `<tr>${columns.map(([, render]) => `<td>${render(row)}</td>`).join("")}</tr>`).join("")
-    : `<tr><td colspan="${columns.length}"><div class="empty-state">当前筛选条件下没有匹配数据。</div></td></tr>`;
+    : `<tr><td colspan="${columns.length}"><div class="empty-state">褰撳墠绛涢€夋潯浠朵笅娌℃湁鍖归厤鏁版嵁銆?/div></td></tr>`;
   renderPagination(rows.length);
 }
 
@@ -477,7 +477,7 @@ function renderMedicalTableHead(columns) {
     </div>
   `;
   return `<tr>${columns.map(([label], index) => {
-    if (index === 0) return `<th>${label}${searchBox("headDrugFilter", "搜索药品", filters.drugKeyword)}</th>`;
+    if (index === 0) return `<th>${label}${searchBox("headDrugFilter", "鎼滅储鑽搧", filters.drugKeyword)}</th>`;
     if (index !== 2) return `<th>${label}</th>`;
     return `<th>${label}
       <div style="margin-top:6px;">
@@ -486,12 +486,12 @@ function renderMedicalTableHead(columns) {
           class="select-input"
           style="padding:6px 8px;font-size:12px;min-width:150px;"
           onchange="applyFilters()">
-          <option value="" ${filters.updateType === "" ? "selected" : ""}>全部</option>
-          <option value="drug" ${filters.updateType === "drug" ? "selected" : ""}>新增药品</option>
-          <option value="drug_synonym" ${filters.updateType === "drug_synonym" ? "selected" : ""}>新增药品异名</option>
-          <option value="mismatch" ${filters.updateType === "mismatch" ? "selected" : ""}>药品和药品异名不一致</option>
-          <option value="target" ${filters.updateType === "target" ? "selected" : ""}>更新靶点</option>
-          <option value="moa" ${filters.updateType === "moa" ? "selected" : ""}>更新药理类型</option>
+          <option value="" ${filters.updateType === "" ? "selected" : ""}>鍏ㄩ儴</option>
+          <option value="drug" ${filters.updateType === "drug" ? "selected" : ""}>鏂板鑽搧</option>
+          <option value="drug_synonym" ${filters.updateType === "drug_synonym" ? "selected" : ""}>鏂板鑽搧寮傚悕</option>
+          <option value="mismatch" ${filters.updateType === "mismatch" ? "selected" : ""}>鑽搧鍜岃嵂鍝佸紓鍚嶄笉涓€鑷?/option>
+          <option value="target" ${filters.updateType === "target" ? "selected" : ""}>鏇存柊闈剁偣</option>
+          <option value="moa" ${filters.updateType === "moa" ? "selected" : ""}>鏇存柊鑽悊绫诲瀷</option>
         </select>
       </div>
     </th>`;
@@ -515,29 +515,29 @@ function renderAacrTableHead() {
 
   return `
     <tr>
-      <th>管线${searchBox("headPipelineFilter", "搜索管线", filters.pipeline)}</th>
-      <th>公司${searchBox("headCompanyFilter", "搜索公司", filters.company)}</th>
-      <th>靶点${searchBox("headTargetFilter", "搜索靶点", filters.targetMeta)}</th>
-      <th>作用机制${searchBox("headMoaFilter", "搜索机制", filters.moaMeta)}</th>
-      <th>总分</th>
-      <th>简述</th>
+      <th>绠＄嚎${searchBox("headPipelineFilter", "鎼滅储绠＄嚎", filters.pipeline)}</th>
+      <th>鍏徃${searchBox("headCompanyFilter", "鎼滅储鍏徃", filters.company)}</th>
+      <th>闈剁偣${searchBox("headTargetFilter", "鎼滅储闈剁偣", filters.targetMeta)}</th>
+      <th>浣滅敤鏈哄埗${searchBox("headMoaFilter", "鎼滅储鏈哄埗", filters.moaMeta)}</th>
+      <th>鎬诲垎</th>
+      <th>绠€杩?/th>
       <th>ID</th>
     </tr>
   `;
 }
 
 function statusCell(row) {
-  const done = row.updateStatusText === "已更新";
+  const done = row.updateStatusText === "宸叉洿鏂?;
   return `<button class="ghost-btn" onclick="toggleMedicalStatus('${escJs(row.__id)}', event)" style="padding:6px 10px;border-color:${done ? '#16a34a' : '#94a3b8'};color:${done ? '#166534' : '#475569'};background:${done ? '#dcfce7' : '#f1f5f9'};">${esc(row.updateStatusText)}</button>`;
 }
 
 function renderPagination(total) {
   const totalPages = Math.max(1, Math.ceil(total / state.perPage));
   if (state.page > totalPages) state.page = totalPages;
-  document.getElementById("pageInfo").textContent = `第 ${state.page} / ${totalPages} 页，共 ${total} 条`;
+  document.getElementById("pageInfo").textContent = `绗?${state.page} / ${totalPages} 椤碉紝鍏?${total} 鏉;
   document.getElementById("pageBtns").innerHTML = `
-    <button class="ghost-btn" ${state.page === 1 ? "disabled" : ""} onclick="goToPage(${state.page - 1})">上一页</button>
-    <button class="ghost-btn" ${state.page === totalPages ? "disabled" : ""} onclick="goToPage(${state.page + 1})">下一页</button>
+    <button class="ghost-btn" ${state.page === 1 ? "disabled" : ""} onclick="goToPage(${state.page - 1})">涓婁竴椤?/button>
+    <button class="ghost-btn" ${state.page === totalPages ? "disabled" : ""} onclick="goToPage(${state.page + 1})">涓嬩竴椤?/button>
   `;
 }
 
@@ -571,31 +571,31 @@ function openModal(rowId) {
   const row = activeModule().rows.find(item => item.__id === rowId);
   if (!row) return;
   document.getElementById("modalOverlay").classList.add("open");
-  document.getElementById("modalTitle").textContent = state.activeModule === "medical" ? (row.drugDisplay || "药品详情") : (row.drug_name || "管线详情");
+  document.getElementById("modalTitle").textContent = state.activeModule === "medical" ? (row.drugDisplay || "鑽搧璇︽儏") : (row.drug_name || "绠＄嚎璇︽儏");
   document.getElementById("modalSubtitle").textContent = state.activeModule === "medical" ? (row.newsTitle || row.idNews || "") : (row.title || row.id || "");
   document.getElementById("modalLeft").innerHTML = state.activeModule === "medical"
     ? `<div class="section">
-         <div class="section-title">来源信息</div>
-         ${infoRow("药品原名", row.drugOriginal)}
-         ${infoRow("药品异名", row.drugMetaDisplay)}
-         ${infoRow("药品异名meta", row.drugSynonymMetaDisplay)}
-         ${infoRow("靶点", row.targetMetaDisplay)}
-         ${infoRow("药理类型", row.moaTargetDisplay)}
-         ${infoRow("来源", row.sourceNews)}
+         <div class="section-title">鏉ユ簮淇℃伅</div>
+         ${infoRow("鑽搧鍘熷悕", row.drugOriginal)}
+         ${infoRow("鑽搧寮傚悕", row.drugMetaDisplay)}
+         ${infoRow("鑽搧寮傚悕meta", row.drugSynonymMetaDisplay)}
+         ${infoRow("闈剁偣", row.targetMetaDisplay)}
+         ${infoRow("鑽悊绫诲瀷", row.moaTargetDisplay)}
+         ${infoRow("鏉ユ簮", row.sourceNews)}
        </div>
        <div class="section">
-         <div class="section-title">药品基线信息</div>
-         ${infoRow("药品名称", row.baselineName)}
-         ${infoRow("靶点", row.baselineTarget)}
-         ${infoRow("药理类型", row.baselineMoa)}
-         ${infoRow("机构", row.baselineCompany)}
+         <div class="section-title">鑽搧鍩虹嚎淇℃伅</div>
+         ${infoRow("鑽搧鍚嶇О", row.baselineName)}
+         ${infoRow("闈剁偣", row.baselineTarget)}
+         ${infoRow("鑽悊绫诲瀷", row.baselineMoa)}
+         ${infoRow("鏈烘瀯", row.baselineCompany)}
        </div>`
     : `<div class="section">
-         ${infoRow("药品", row.drug_name)}
-         ${infoRow("公司", row.company)}
-         ${infoRow("靶点", row.target)}
-         ${infoRow("机制", row.modality)}
-         ${infoRow("总分", scoreText(row.total_score))}
+         ${infoRow("鑽搧", row.drug_name)}
+         ${infoRow("鍏徃", row.company)}
+         ${infoRow("闈剁偣", row.target)}
+         ${infoRow("鏈哄埗", row.modality)}
+         ${infoRow("鎬诲垎", scoreText(row.total_score))}
          ${infoRow("ID", row.id)}
        </div>
        <div class="section">
@@ -603,8 +603,8 @@ function openModal(rowId) {
          <div class="abstract-box modal-abstract-box">${esc(row.abstract_text || "-")}</div>
        </div>`;
   document.getElementById("modalRight").innerHTML = state.activeModule === "medical"
-    ? `<div class="section"><div class="section-title">维度详情</div>${row.dimensions.length ? row.dimensions.map(item => metric(item)).join("") : '<div class="empty-state">当前记录没有维度明细。</div>'}</div>`
-    : `<div class="section"><div class="section-title">评分详情</div>${metric({ name: "机构重要性", score: row.institution_score, reason: "机构类型和商业化潜力" })}${metric({ name: "赛道重要性", score: row.track_score, reason: "靶点和技术赛道热度" })}${metric({ name: "里程碑重要性", score: row.milestone_score, reason: "研发进度和事件强度" })}${metric({ name: "领域热度", score: row.field_heat_score, reason: "方向整体热度" })}${metric({ name: "加分项", score: row.bonus_score, reason: row.brief_reason })}</div>`;
+    ? `<div class="section"><div class="section-title">缁村害璇︽儏</div>${row.dimensions.length ? row.dimensions.map(item => metric(item)).join("") : '<div class="empty-state">褰撳墠璁板綍娌℃湁缁村害鏄庣粏銆?/div>'}</div>`
+    : `<div class="section"><div class="section-title">璇勫垎璇︽儏</div>${metric({ name: "鏈烘瀯閲嶈鎬?, score: row.institution_score, reason: "鏈烘瀯绫诲瀷鍜屽晢涓氬寲娼滃姏" })}${metric({ name: "璧涢亾閲嶈鎬?, score: row.track_score, reason: "闈剁偣鍜屾妧鏈禌閬撶儹搴? })}${metric({ name: "閲岀▼纰戦噸瑕佹€?, score: row.milestone_score, reason: "鐮斿彂杩涘害鍜屼簨浠跺己搴? })}${metric({ name: "棰嗗煙鐑害", score: row.field_heat_score, reason: "鏂瑰悜鏁翠綋鐑害" })}${metric({ name: "鍔犲垎椤?, score: row.bonus_score, reason: row.brief_reason })}</div>`;
 }
 
 function infoRow(label, value) {
@@ -645,7 +645,7 @@ function toggleMedicalStatus(rowId, event) {
   if (state.activeModule !== "medical") return;
   const row = MODULES.medical.rows.find(item => item.__id === rowId);
   if (!row) return;
-  row.updateStatusText = row.updateStatusText === "已更新" ? "未更新" : "已更新";
+  row.updateStatusText = row.updateStatusText === "宸叉洿鏂? ? "鏈洿鏂? : "宸叉洿鏂?;
   renderStats();
   renderTableSection();
 }
@@ -692,12 +692,12 @@ function handleModuleImport(event, moduleId) {
     const rows = parseCsvText(String(e.target?.result || ""));
     if (moduleId === "medical") {
       MODULES.medical.rows = normalizeMedicalRows(rows);
-      MODULES.medical.sourceName = `本地 CSV / ${file.name}`;
-      MODULES.medical.sourceMeta = "当前数据来自你导入的医药资讯 CSV。";
+      MODULES.medical.sourceName = `鏈湴 CSV / ${file.name}`;
+      MODULES.medical.sourceMeta = "褰撳墠鏁版嵁鏉ヨ嚜浣犲鍏ョ殑鍖昏嵂璧勮 CSV銆?;
     } else {
       MODULES.aacr.rows = normalizeAacrRows(rows);
-      MODULES.aacr.sourceName = `本地 CSV / ${file.name}`;
-      MODULES.aacr.sourceMeta = "当前数据来自你导入的 AACR CSV。";
+      MODULES.aacr.sourceName = `鏈湴 CSV / ${file.name}`;
+      MODULES.aacr.sourceMeta = "褰撳墠鏁版嵁鏉ヨ嚜浣犲鍏ョ殑 AACR CSV銆?;
     }
     resetFilters();
   };
@@ -711,13 +711,13 @@ async function loadDefaultMedicalCsv() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const text = await response.text();
     MODULES.medical.rows = normalizeMedicalRows(parseCsvText(text));
-    MODULES.medical.sourceName = "本地 CSV / npnews_daily_table_latest_scored.csv";
-    MODULES.medical.sourceMeta = "当前页面默认读取同目录 scored CSV。";
+    MODULES.medical.sourceName = "鏈湴 CSV / npnews_daily_table_latest_scored.csv";
+    MODULES.medical.sourceMeta = "褰撳墠椤甸潰榛樿璇诲彇鍚岀洰褰?scored CSV銆?;
   } catch (error) {
     console.error(error);
     MODULES.medical.rows = [];
-    MODULES.medical.sourceName = "默认 CSV 加载失败";
-    MODULES.medical.sourceMeta = "请启动本地静态服务器，或手动导入同格式 CSV。";
+    MODULES.medical.sourceName = "榛樿 CSV 鍔犺浇澶辫触";
+    MODULES.medical.sourceMeta = "璇峰惎鍔ㄦ湰鍦伴潤鎬佹湇鍔″櫒锛屾垨鎵嬪姩瀵煎叆鍚屾牸寮?CSV銆?;
   }
 }
 
