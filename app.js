@@ -226,6 +226,7 @@ function getDefaultFilters(moduleId) {
         dateTo: "",
         status: { pending: true, done: true },
         keyword: "",
+        drugKeyword: "",
         updateType: ""
       }
     : {
@@ -233,6 +234,8 @@ function getDefaultFilters(moduleId) {
         scoreMin: 0,
         scoreMax: 100,
         keyword: "",
+        drugKeyword: "",
+        companyType: "",
         pipeline: "",
         company: "",
         targetMeta: "",
@@ -258,6 +261,7 @@ function readFiltersFromDom() {
   if (state.activeModule !== "medical") {
     return {
       ...base,
+      companyType: (document.getElementById("companyTypeInput")?.value || "").trim().toLowerCase(),
       pipeline: (document.getElementById("headPipelineFilter")?.value || "").trim().toLowerCase(),
       company: (document.getElementById("headCompanyFilter")?.value || "").trim().toLowerCase(),
       targetMeta: (document.getElementById("headTargetFilter")?.value || "").trim().toLowerCase(),
@@ -266,6 +270,7 @@ function readFiltersFromDom() {
   }
   return {
     ...base,
+    drugKeyword: (document.getElementById("headDrugFilter")?.value || "").trim().toLowerCase(),
     dateFrom: document.getElementById("dateFrom")?.value || "",
     dateTo: document.getElementById("dateTo")?.value || "",
     status: {
@@ -300,6 +305,10 @@ function filteredRows() {
         if (matcher && !row.updateTags.some(tag => matcher(tag))) return false;
       }
     }
+    if (module.id === "medical" && filters.drugKeyword) {
+      const drugHaystack = [row.drugDisplay, row.drugOriginal].join(" ").toLowerCase();
+      if (!drugHaystack.includes(filters.drugKeyword)) return false;
+    }
     if (filters.keyword) {
       const haystack = module.id === "medical"
         ? [row.drugDisplay, row.companyDisplay, row.updateContent, row.newsTitle, row.idNews].join(" ").toLowerCase()
@@ -307,6 +316,7 @@ function filteredRows() {
       if (!haystack.includes(filters.keyword)) return false;
     }
     if (module.id !== "medical") {
+      if (filters.companyType && !String(row.source_org_type || "").toLowerCase().includes(filters.companyType)) return false;
       if (filters.pipeline && !String(row.drug_name || "").toLowerCase().includes(filters.pipeline)) return false;
       if (filters.company && !String(row.company || "").toLowerCase().includes(filters.company)) return false;
       if (filters.targetMeta && !String(row.target_meta || "").toLowerCase().includes(filters.targetMeta)) return false;
@@ -342,6 +352,18 @@ function buildSidebar() {
         <input class="score-input" id="scoreMax" type="number" min="0" max="100" value="${f.scoreMax}" oninput="applyFilters()">
       </div>
     </div>
+    ${module.id !== "medical" ? `
+      <div class="filter-group">
+        <div class="filter-group-title">公司类型</div>
+        <input
+          class="search-input"
+          id="companyTypeInput"
+          type="search"
+          value="${esc(f.companyType || "")}"
+          placeholder="搜索公司类型"
+          onkeydown="handleSubmitSearch(event)">
+      </div>
+    ` : ""}
     ${module.id === "medical" ? `
       <div class="filter-group">
         <div class="filter-group-title">日期</div>
@@ -430,6 +452,8 @@ function renderTableSection() {
   document.getElementById("tableHead").innerHTML = module.id === "medical"
     ? renderMedicalTableHead(columns)
     : renderAacrTableHead();
+  const table = document.querySelector(".table-scroll table");
+  if (table) table.className = module.id === "medical" ? "table-medical" : "table-aacr";
   const start = (state.page - 1) * state.perPage;
   const pageRows = rows.slice(start, start + state.perPage);
   document.getElementById("tableBody").innerHTML = pageRows.length
@@ -440,8 +464,21 @@ function renderTableSection() {
 
 function renderMedicalTableHead(columns) {
   const filters = state.filters.medical || getDefaultFilters("medical");
-  return `<tr>${columns.map(([label]) => {
-    if (label !== "更新内容") return `<th>${label}</th>`;
+  const searchBox = (id, placeholder, value) => `
+    <div style="margin-top:6px;">
+      <input
+        class="search-input"
+        id="${id}"
+        type="search"
+        value="${esc(value || "")}"
+        placeholder="${placeholder}"
+        style="padding:6px 8px;font-size:12px;min-width:110px;max-width:160px;"
+        onkeydown="handleSubmitSearch(event)">
+    </div>
+  `;
+  return `<tr>${columns.map(([label], index) => {
+    if (index === 0) return `<th>${label}${searchBox("headDrugFilter", "搜索药品", filters.drugKeyword)}</th>`;
+    if (index !== 2) return `<th>${label}</th>`;
     return `<th>${label}
       <div style="margin-top:6px;">
         <select
@@ -472,7 +509,7 @@ function renderAacrTableHead() {
         value="${esc(value || "")}"
         placeholder="${placeholder}"
         style="padding:6px 8px;font-size:12px;min-width:110px;max-width:160px;"
-        oninput="applyFilters()">
+        onkeydown="handleSubmitSearch(event)">
     </div>
   `;
 
@@ -560,6 +597,10 @@ function openModal(rowId) {
          ${infoRow("机制", row.modality)}
          ${infoRow("总分", scoreText(row.total_score))}
          ${infoRow("ID", row.id)}
+       </div>
+       <div class="section">
+         <div class="section-title">????</div>
+         <div class="abstract-box modal-abstract-box">${esc(row.abstract_text || "-")}</div>
        </div>`;
   document.getElementById("modalRight").innerHTML = state.activeModule === "medical"
     ? `<div class="section"><div class="section-title">维度详情</div>${row.dimensions.length ? row.dimensions.map(item => metric(item)).join("") : '<div class="empty-state">当前记录没有维度明细。</div>'}</div>`
@@ -572,6 +613,12 @@ function infoRow(label, value) {
 
 function metric(item) {
   return `<div class="metric-item"><div class="metric-head"><div class="metric-name">${esc(item.name)}</div><div class="metric-score">${esc(scoreText(item.score))}</div></div><div class="metric-track"><div class="metric-fill" style="width:${Math.max(0, Math.min(num(item.score), 100))}%"></div></div><div class="metric-reason">${esc(item.reason || "-")}</div></div>`;
+}
+
+function handleSubmitSearch(event) {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  applyFilters();
 }
 
 function closeModal() {
