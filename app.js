@@ -113,6 +113,12 @@ function parseUpdateTags(label) {
   return String(label || "").split(";").map(item => item.trim()).filter(Boolean);
 }
 
+function resolveMedicalUpdateStatus(row) {
+  const explicitStatus = String(row.update_status || row.updateStatus || "").trim();
+  if (explicitStatus) return explicitStatus;
+  return String(row.state || "").trim().toLowerCase() === "open" ? "未更新" : "已更新";
+}
+
 function normalizeMedicalRows(rows) {
   return rows.map((row, index) => ({
     ...row,
@@ -132,7 +138,7 @@ function normalizeMedicalRows(rows) {
     newsUrl: String(row.url_news || "").trim(),
     sourceNews: String(row.source_news || "").trim(),
     dateOnly: String(row.time || "").trim().slice(0, 10),
-    updateStatusText: String(row.update_status || row.updateStatus || "").trim() || "未更新",
+    updateStatusText: resolveMedicalUpdateStatus(row),
     baselineName: String(row.baseline_name || "").trim(),
     baselineTarget: String(row.baseline_target || "").trim(),
     baselineMoa: String(row.baseline_MOA || "").trim(),
