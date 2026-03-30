@@ -1,4 +1,16 @@
-const TODAY = new Date().toISOString().slice(0, 10);
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+const TODAY = formatLocalDate(new Date());
+const YESTERDAY = (() => {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return formatLocalDate(date);
+})();
 const DEFAULT_MEDICAL_CSV = "./npnews_daily_table_latest_scored.csv";
 
 const MODULES = {
@@ -401,7 +413,7 @@ function renderHero() {
   document.getElementById("sourceName").textContent = module.sourceName;
   document.getElementById("sourceMeta").textContent = module.sourceMeta;
   document.getElementById("tableTitle").textContent = `${module.title}总览`;
-  document.getElementById("tableSubtitle").textContent = module.id === "medical" ? "主表字段直接来自 scored CSV。" : "AACR 模块保持独立。";
+  document.getElementById("tableSubtitle").textContent = "";
 }
 
 function renderStats() {
@@ -411,7 +423,7 @@ function renderStats() {
     ? [
         ["高优先", rows.filter(r => r.totalScore >= 75).length, "high"],
         ["中优先", rows.filter(r => r.totalScore >= 50 && r.totalScore < 75).length, "mid"],
-        ["今日新增", rows.filter(r => r.dateOnly === TODAY).length, "accent"],
+        ["昨日更新", rows.filter(r => r.dateOnly === YESTERDAY).length, "accent"],
         ["待更新", rows.filter(r => r.updateStatusText === "未更新").length, "green"]
       ]
     : [
@@ -599,7 +611,7 @@ function openModal(rowId) {
          ${infoRow("ID", row.id)}
        </div>
        <div class="section">
-         <div class="section-title">????</div>
+         <div class="section-title">摘要</div>
          <div class="abstract-box modal-abstract-box">${esc(row.abstract_text || "-")}</div>
        </div>`;
   document.getElementById("modalRight").innerHTML = state.activeModule === "medical"
