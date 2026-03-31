@@ -334,6 +334,7 @@ async def score_one_row(
 
 
 def append_jsonl(path: Path, item: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8-sig") as handle:
         handle.write(json.dumps(item, ensure_ascii=False) + "\n")
 
@@ -414,6 +415,7 @@ def flatten_error_for_csv(row: dict[str, str], row_id: int, model_name: str, err
 
 
 def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=OUTPUT_COLUMNS)
         writer.writeheader()

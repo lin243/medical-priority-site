@@ -10,6 +10,7 @@ from typing import Any
 REPO_ROOT = Path(r"E:\llm-master")
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+import llm.elasticsearch as llm_elasticsearch  # noqa: E402
 from llm.elasticsearch import get_prod_client  # noqa: E402
 from npnews_pipeline_utils import build_export_csv_path, get_previous_day_str  # noqa: E402
 
@@ -383,6 +384,7 @@ async def export_daily_table(
     *,
     target_date: str = TARGET_DATE,
     output_path: Path = OUTPUT_PATH,
+    client: Any | None = None,
 ) -> tuple[list[dict[str, str]], dict[str, int]]:
     global TARGET_DATE, OUTPUT_PATH
     old_target_date = TARGET_DATE
@@ -390,9 +392,10 @@ async def export_daily_table(
     TARGET_DATE = target_date
     OUTPUT_PATH = output_path
 
-    client = get_prod_client()
+    managed_client = client or get_prod_client()
+    owns_client = client is None
     try:
-        article_hits = await fetch_articles(client)
+        article_hits = await fetch_articles(managed_client)
         filtered_article_hits = [
             hit
             for hit in article_hits
@@ -405,7 +408,7 @@ async def export_daily_table(
         }
         doc_ids = list(article_by_id.keys())
 
-        label_hits = await fetch_label_docs(client, doc_ids) if doc_ids else []
+        label_hits = await fetch_label_docs(managed_client, doc_ids) if doc_ids else []
         label_by_doc_id: dict[str, list[dict[str, Any]]] = {}
         for hit in label_hits:
             source = hit.get("_source", {})
@@ -424,9 +427,10 @@ async def export_daily_table(
         rows = [row for row in rows if has_nonempty_label(row)]
 
         drug_ids = sorted({row.get("_drug_meta_id", "") for row in rows if row.get("_drug_meta_id")})
-        drug_docs = await fetch_drug_docs(client, drug_ids) if drug_ids else {}
+        drug_docs = await fetch_drug_docs(managed_client, drug_ids) if drug_ids else {}
         enrich_with_drug_earth(rows, drug_docs)
 
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         with output_path.open("w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(
                 f,
@@ -447,7 +451,16 @@ async def export_daily_table(
     finally:
         TARGET_DATE = old_target_date
         OUTPUT_PATH = old_output_path
+        if owns_client:
+            await close_prod_client(managed_client)
+
+
+async def close_prod_client(client: Any) -> None:
+    try:
         await client.close()
+    finally:
+        if getattr(llm_elasticsearch, "prod_client", None) is client:
+            llm_elasticsearch.prod_client = None
 
 
 async def main() -> None:
