@@ -5,6 +5,15 @@ function formatLocalDate(date) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeDateValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const match = raw.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!match) return raw.slice(0, 10);
+  const [, year, month, day] = match;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 const TODAY = formatLocalDate(new Date());
 const YESTERDAY = (() => {
   const date = new Date();
@@ -137,7 +146,7 @@ function normalizeMedicalRows(rows) {
     newsTitle: String(row.title_news || "").trim(),
     newsUrl: String(row.url_news || "").trim(),
     sourceNews: String(row.source_news || "").trim(),
-    dateOnly: String(row.time || "").trim().slice(0, 10),
+    dateOnly: normalizeDateValue(row.time),
     updateStatusText: resolveMedicalUpdateStatus(row),
     baselineName: String(row.baseline_name || "").trim(),
     baselineTarget: String(row.baseline_target || "").trim(),
